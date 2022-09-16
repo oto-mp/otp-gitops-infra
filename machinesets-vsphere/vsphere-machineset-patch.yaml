@@ -10,8 +10,8 @@ metadata:
         selector:
           matchLabels:
             machine.openshift.io/cluster-api-cluster: {{ (lookup "config.openshift.io/v1" "Infrastructure" "" "cluster").status.infrastructureName" }}
-            # machine.openshift.io/cluster-api-machineset: {{ (lookup "config.openshift.io/v1" "Infrastructure" "" "cluster").status.infrastructureName" }}-storage
-            machine.openshift.io/cluster-api-machineset: ocpinstall-p2g95-storage
+            machine.openshift.io/cluster-api-machineset: {{ (lookup "config.openshift.io/v1" "Infrastructure" "" "cluster").status.infrastructureName" }}-storage
+            # machine.openshift.io/cluster-api-machineset: ocpinstall-p2g95-storage
         template:
           spec:
             providerSpec:
@@ -19,8 +19,8 @@ metadata:
                 network:
                   devices:
                   - networkName: {{ (lookup "v1" "ConfigMap" "kube-system" "cluster-config-v1").data.install-config.platform.vsphere.network" }}
-                # template: {{ (lookup "config.openshift.io/v1" "Infrastructure" "" "cluster").status.infrastructureName" }}-rhcos
-                template: ocpinstall-p2g95-rhcos
+                template: {{ (lookup "config.openshift.io/v1" "Infrastructure" "" "cluster").status.infrastructureName" }}-rhcos
+                # template: ocpinstall-p2g95-rhcos
                 workspace:
                   datacenter: {{ (lookup "v1" "ConfigMap" "kube-system" "cluster-config-v1").data.install-config.platform.vsphere.datacenter" }}
                   datastore: {{ (lookup "v1" "ConfigMap" "kube-system" "cluster-config-v1").data.install-config.platform.vsphere.defaultDatastore" }}
