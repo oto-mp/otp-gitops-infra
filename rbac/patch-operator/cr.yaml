@@ -1,0 +1,15 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: custom-argocd-cluster-argocd-application-controller-patch-operator
+rules:
+  - apiGroups:
+      - redhatcop.redhat.io
+    resources:
+      - patches
+    verbs:
+      - update
+      - create
+      - list
+      - delete
+      - patch
