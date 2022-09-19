@@ -110,7 +110,6 @@ spec:
           EOF
           cat vsphere-machineset.yaml
           oc apply -f vsphere-machineset.yaml
-          {{- end }}
           echo "End of script."
       restartPolicy: OnFailure
   backoffLimit: 2
