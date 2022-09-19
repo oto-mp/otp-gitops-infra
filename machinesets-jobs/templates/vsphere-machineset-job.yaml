@@ -96,8 +96,8 @@ spec:
                     workspace:
                       datacenter: $VS_DATACENTER
                       datastore: $VS_DATASTORE
-                      folder: /$VS_DATACENTER/vm/$infraID
-                      resourcePool: /$VS_DATACENTER/host/$VS_CLUSTER/Resources
+                      folder: {{ default "/$VS_DATACENTER/vm/$infraID" .Values.vsphere.folder }}
+                      resourcePool: {{ default "/$VS_DATACENTER/host/$VS_CLUSTER/Resources" .Values.vsphere.resourcePool }} 
                       server: $VS_SERVER
           EOF
           cat vsphere-machineset.yaml

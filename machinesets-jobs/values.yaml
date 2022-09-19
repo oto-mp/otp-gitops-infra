@@ -5,6 +5,8 @@ cloudProvider:
   managed: false # for roks, aro, rosa set to true
 
 vsphere:
+  folder:
+  resourcePool:
   networkName: 
   datacenter: 
   datastore: 
