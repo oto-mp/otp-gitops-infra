@@ -1,0 +1,54 @@
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfigPool
+metadata:
+  name: storage
+spec:
+  machineConfigSelector:
+    matchExpressions:
+    - key: machineconfiguration.openshift.io/role
+      operator: In
+      values: 
+      - worker
+      - storage
+  nodeSelector:
+    matchLabels:
+      cluster.ocs.openshift.io/openshift-storage: ""
+      node-role.kubernetes.io/infra: ""
+---
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfigPool
+metadata:
+  name: infra
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    helm.sh/hook-weight: "0"
+spec:
+  machineConfigSelector:
+    matchExpressions:
+    - key: machineconfiguration.openshift.io/role
+      operator: In
+      values: 
+      - worker
+      - infra
+  nodeSelector:
+    matchLabels:
+      node-role.kubernetes.io/infra: ""
+---
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfigPool
+metadata:
+  name: cp4x
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    helm.sh/hook-weight: "0"
+spec:
+  machineConfigSelector:
+    matchExpressions:
+    - key: machineconfiguration.openshift.io/role
+      operator: In
+      values: 
+      - worker
+      - cp4x
+  nodeSelector:
+    matchLabels:
+      node-role.kubernetes.io/cp4x: ""

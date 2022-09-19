@@ -1,0 +1,105 @@
+{{- if eq .Values.cloudProvider.name "vsphere" }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.cloudProvider.name }}-machineset-cp4x
+  namespace: openshift-gitops
+spec:
+  template:
+    spec:
+      serviceAccountName: openshift-gitops-cntk-argocd-application-controller
+      containers:
+      - name: {{ .Values.cloudProvider.name }}-machineset
+        image: quay.io/openshift/origin-cli:v3.11
+        command: ["/bin/bash"]
+        args:
+        - -c
+        - |-
+          ocpversion=$(oc get clusterversion version | grep -v NAME | awk '{print $2}')
+          a=( ${ocpversion//./ } )
+          majorVer="${a[0]}.${a[1]}"
+          installconfig=$(oc get configmap cluster-config-v1 -n kube-system -o jsonpath='{.data.install-config}')
+
+          infraID=$(oc get -o jsonpath='{.status.infrastructureName}' infrastructure cluster)
+          vsconfig=$(echo "${installconfig}" | grep -A13 "^platform:" | grep "^    " | grep -v "  vsphere:")
+          VS_NETWORK=$(echo "${vsconfig}"  | grep "network" | cut -d":" -f2 | xargs)
+          VS_DATACENTER=$(echo "${vsconfig}" | grep "datacenter" | cut -d":" -f2 | xargs)
+          VS_DATASTORE=$(echo "${vsconfig}" | grep "defaultDatastore" | cut -d":" -f2 | xargs)
+          VS_CLUSTER=$(echo "${vsconfig}" | grep "cluster" | cut -d":" -f2 | xargs)
+          VS_SERVER=$(echo "${vsconfig}" | grep "vCenter" | cut -d":" -f2 | xargs)
+
+          echo "infraID: $infraID"
+          echo "VS_NETWORK: $VS_NETWORK"
+          echo "VS_DATACENTER: $VS_DATACENTER"
+          echo "VS_DATASTORE: $VS_DATASTORE"
+          echo "VS_CLUSTER: $VS_CLUSTER"
+          echo "VS_SERVER: $VS_SERVER"
+
+          cat <<EOF > vsphere-machineset.yaml
+          apiVersion: machine.openshift.io/v1beta1
+          kind: MachineSet
+          metadata:
+            labels:
+              machine.openshift.io/cluster-api-cluster: $infraID
+              machine.openshift.io/cluster-api-machine-role: storage
+              machine.openshift.io/cluster-api-machine-type: storage
+              app.kubernetes.io/instance: {{ .Release.Name }}
+            annotations:
+              app.kubernetes.io/instance: {{ .Release.Name }}
+              argocd.argoproj.io/compare-options: IgnoreExtraneous
+            name: $infraID-vsphere-storage
+            namespace: openshift-machine-api
+          spec:
+            replicas: 3
+            selector:
+              matchLabels:
+                machine.openshift.io/cluster-api-cluster: $infraID
+                machine.openshift.io/cluster-api-machineset: $infraID-storage
+            template:
+              metadata:
+                labels:
+                  machine.openshift.io/cluster-api-cluster: $infraID
+                  machine.openshift.io/cluster-api-machine-role: storage
+                  machine.openshift.io/cluster-api-machine-type: storage
+                  machine.openshift.io/cluster-api-machineset: $infraID-storage
+              spec:
+                taints:
+                - effect: NoSchedule
+                  key: node.ocs.openshift.io/storage
+                  value: "true"
+                metadata:
+                  labels:
+                    cluster.ocs.openshift.io/openshift-storage: ""
+                    node-role.kubernetes.io/infra: ""
+                providerSpec:
+                  value:
+                    apiVersion: vsphereprovider.openshift.io/v1beta1
+                    credentialsSecret:
+                      name: vsphere-cloud-credentials
+                    diskGiB: {{ default "120" .Values.vsphere.storageNodes.diskGiB }}
+                    kind: VSphereMachineProviderSpec
+                    memoryMiB: 65536
+                    metadata:
+                      creationTimestamp: null
+                    network:
+                      devices:
+                      - networkName: $VS_NETWORK
+                    numCPUs: 16
+                    numCoresPerSocket: 1
+                    snapshot: ""
+                    template: $infraID-rhcos
+                    userDataSecret:
+                      name: worker-user-data
+                    workspace:
+                      datacenter: $VS_DATACENTER
+                      datastore: $VS_DATASTORE
+                      folder: {{ default "/$VS_DATACENTER/vm/$infraID" .Values.vsphere.folder }}
+                      resourcePool: {{ default "/$VS_DATACENTER/host/$VS_CLUSTER/Resources" .Values.vsphere.resourcePool }} 
+                      server: $VS_SERVER
+          EOF
+          cat vsphere-machineset.yaml
+          oc apply -f vsphere-machineset.yaml
+          echo "End of script."
+      restartPolicy: OnFailure
+  backoffLimit: 2
+{{- end }}

@@ -2,10 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ .Values.cloudProvider.name }}-machineset
-  annotations:
-    argocd.argoproj.io/sync-wave: "360"
-    helm.sh/hook-weight: "360"
+  name: {{ .Values.cloudProvider.name }}-machineset-infra
   namespace: openshift-gitops
 spec:
   template:
@@ -44,50 +41,45 @@ spec:
           metadata:
             labels:
               machine.openshift.io/cluster-api-cluster: $infraID
-              machine.openshift.io/cluster-api-machine-role: storage
-              machine.openshift.io/cluster-api-machine-type: storage
+              machine.openshift.io/cluster-api-machine-role: cp4x
+              machine.openshift.io/cluster-api-machine-type: cp4x
               app.kubernetes.io/instance: {{ .Release.Name }}
             annotations:
               app.kubernetes.io/instance: {{ .Release.Name }}
               argocd.argoproj.io/compare-options: IgnoreExtraneous
-            name: $infraID-vsphere-storage
+            name: $infraID-cp4x-none
             namespace: openshift-machine-api
           spec:
-            replicas: 3
+            replicas: 0
             selector:
               matchLabels:
                 machine.openshift.io/cluster-api-cluster: $infraID
-                machine.openshift.io/cluster-api-machineset: $infraID-storage
+                machine.openshift.io/cluster-api-machineset: $infraID-cp4x
             template:
               metadata:
                 labels:
                   machine.openshift.io/cluster-api-cluster: $infraID
-                  machine.openshift.io/cluster-api-machine-role: storage
-                  machine.openshift.io/cluster-api-machine-type: storage
-                  machine.openshift.io/cluster-api-machineset: $infraID-storage
+                  machine.openshift.io/cluster-api-machine-role: worker
+                  machine.openshift.io/cluster-api-machine-type: worker
+                  machine.openshift.io/cluster-api-machineset: $infraID-cp4x
               spec:
-                taints:
-                - effect: NoSchedule
-                  key: node.ocs.openshift.io/storage
-                  value: "true"
                 metadata:
                   labels:
-                    cluster.ocs.openshift.io/openshift-storage: ""
-                    node-role.kubernetes.io/infra: ""
+                    node-role.kubernetes.io/cp4x: ""
                 providerSpec:
                   value:
                     apiVersion: vsphereprovider.openshift.io/v1beta1
                     credentialsSecret:
                       name: vsphere-cloud-credentials
-                    diskGiB: {{ default "120" .Values.vsphere.storageNodes.diskGiB }}
+                    diskGiB: 120
                     kind: VSphereMachineProviderSpec
-                    memoryMiB: 65536
+                    memoryMiB: 32768
                     metadata:
                       creationTimestamp: null
                     network:
                       devices:
                       - networkName: $VS_NETWORK
-                    numCPUs: 16
+                    numCPUs: 8
                     numCoresPerSocket: 1
                     snapshot: ""
                     template: $infraID-rhcos
