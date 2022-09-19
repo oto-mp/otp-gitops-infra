@@ -54,6 +54,10 @@ spec:
               machine.openshift.io/cluster-api-cluster: $infraID
               machine.openshift.io/cluster-api-machine-role: storage
               machine.openshift.io/cluster-api-machine-type: storage
+              app.kubernetes.io/instance: {{ .Release.Name }}
+            annotations:
+              app.kubernetes.io/instance: {{ .Release.Name }}
+              argocd.argoproj.io/compare-options: IgnoreExtraneous
             name: $infraID-vsphere-storage
             namespace: openshift-machine-api
           spec:
